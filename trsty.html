@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green-Dot · Complete Digital Banking</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for insights -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- jsPDF for statements -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f0f7f0; display: flex; justify-content: center; min-height: 100vh; }
+        #app { width: 100%; max-width: 1440px; background: white; box-shadow: 0 0 40px rgba(0,80,0,0.1); }
+
+        /* Green-Dot brand colors */
+        :root {
+            --gd-green: #0a5c2e;
+            --gd-green-light: #e8f5e9;
+            --gd-green-dark: #064e1f;
+            --gd-white: #ffffff;
+            --gd-gray: #f5f9f5;
+            --gd-border: #c8e6c9;
+        }
+
+        .bg-green-dot { background: var(--gd-green); }
+        .text-green-dot { color: var(--gd-green); }
+        .border-green { border-color: var(--gd-border); }
+
+        /* Navbar */
+        .navbar { background: var(--gd-green); color: white; padding: 1rem 2rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,40,0,0.2); }
+        .logo { font-weight: 700; font-size: 2rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: -0.5px; }
+        .logo i { color: #ccffcc; font-size: 2rem; }
+        .nav-links { display: flex; gap: 2rem; margin-left: auto; }
+        .nav-links a { color: #e0f0e0; text-decoration: none; font-weight: 500; cursor: pointer; padding: 0.5rem 1rem; border-radius: 30px; transition: 0.2s; }
+        .nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,0.15); color: white; }
+        .user-badge { background: white; color: var(--gd-green); padding: 0.4rem 1.2rem; border-radius: 40px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+
+        /* Login Page */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 90vh; background: linear-gradient(135deg, #f5fff5, #e8f5e9); }
+        .login-card { background: white; border-radius: 40px; padding: 3rem; width: 500px; box-shadow: 0 30px 60px rgba(10,92,46,0.25); border: 1px solid var(--gd-border); }
+        .login-title { font-size: 2.5rem; font-weight: 700; color: var(--gd-green); margin-bottom: 0.5rem; }
+        .login-sub { color: #2e7d32; margin-bottom: 2rem; font-size: 1.1rem; }
+        .input-field { margin-bottom: 1.5rem; }
+        .input-field label { display: block; font-weight: 600; color: #1b5e20; margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .input-field input { width: 100%; padding: 1rem 1.2rem; border: 2px solid var(--gd-border); border-radius: 40px; font-size: 1rem; transition: 0.2s; }
+        .input-field input:focus { outline: none; border-color: var(--gd-green); box-shadow: 0 0 0 3px rgba(10,92,46,0.1); }
+        .login-btn { background: var(--gd-green); color: white; border: none; padding: 1.2rem 2rem; border-radius: 50px; font-weight: 700; font-size: 1.3rem; width: 100%; cursor: pointer; transition: 0.2s; }
+        .login-btn:hover { background: var(--gd-green-dark); transform: translateY(-2px); }
+
+        /* Main layout */
+        .main-container { display: flex; min-height: calc(100vh - 80px); background: white; }
+        .sidebar { width: 280px; background: var(--gd-gray); border-right: 2px solid var(--gd-border); padding: 2rem 1rem; }
+        .sidebar-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 16px; color: #1b5e20; cursor: pointer; transition: 0.2s; margin-bottom: 0.3rem; font-weight: 500; }
+        .sidebar-item:hover { background: #d0ebd0; }
+        .sidebar-item.active { background: var(--gd-green); color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(10,92,46,0.3); }
+        .sidebar-item i { width: 24px; font-size: 1.3rem; }
+        .content { flex: 1; padding: 2rem 2.5rem; background: white; overflow-y: auto; }
+
+        /* Card flip */
+        .card-scene { width: 380px; height: 230px; perspective: 1000px; margin: 2rem auto; cursor: pointer; }
+        .card-flipper { width: 100%; height: 100%; position: relative; transition: transform 0.8s; transform-style: preserve-3d; }
+        .card-flipper.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { width: 100%; height: 100%; position: absolute; top: 0; left: 0; backface-visibility: hidden; border-radius: 24px; padding: 1.8rem; box-shadow: 0 20px 40px rgba(0,40,0,0.4); display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(145deg, #0a5c2e, #1a7e4a); color: white; border: 1px solid #a5d6a7; }
+        .card-back { background: #1b5e20; transform: rotateY(180deg); }
+        .card-logo { font-weight: 700; font-size: 1.8rem; letter-spacing: 1px; display: flex; justify-content: space-between; }
+        .card-number { font-size: 1.5rem; letter-spacing: 3px; font-family: 'Courier New', monospace; margin: 1rem 0; }
+        .card-details { display: flex; justify-content: space-between; font-size: 1rem; }
+        .card-stripe { height: 40px; background: #222; margin-top: 1.5rem; }
+        .card-cvv { background: #f5f5f5; color: #000; padding: 0.4rem 1.2rem; border-radius: 8px; width: fit-content; font-weight: 700; }
+
+        /* Dashboard cards */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+        .card { background: white; border-radius: 28px; padding: 2rem; box-shadow: 0 8px 28px rgba(10,92,46,0.08); border: 1px solid var(--gd-border); transition: 0.2s; }
+        .card:hover { box-shadow: 0 12px 32px rgba(10,92,46,0.15); }
+        .balance-large { font-size: 3rem; font-weight: 700; color: var(--gd-green); margin: 0.5rem 0; }
+        .button { background: var(--gd-green); color: white; border: none; padding: 0.9rem 2rem; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .button:hover { background: var(--gd-green-dark); transform: scale(1.02); }
+        .button-outline { background: white; color: var(--gd-green); border: 2px solid var(--gd-border); }
+        .button-outline:hover { background: var(--gd-green-light); }
+        .ai-badge { background: #2e7d32; color: white; padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; }
+
+        /* Transaction rows */
+        .transaction-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #e0f0e0; }
+        .transaction-left { display: flex; gap: 1.2rem; align-items: center; }
+        .transaction-icon { width: 44px; height: 44px; background: var(--gd-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gd-green); }
+        .green { color: #0a5c2e; font-weight: 600; }
+        .red { color: #b91c1c; font-weight: 600; }
+
+        /* Chat */
+        .chat-popup { position: fixed; bottom: 30px; right: 30px; width: 380px; background: white; border-radius: 28px; box-shadow: 0 25px 50px rgba(0,60,0,0.3); border: 1px solid var(--gd-border); z-index: 1100; }
+        .chat-header { background: var(--gd-green); color: white; padding: 1.2rem; border-radius: 28px 28px 0 0; font-weight: 600; display: flex; justify-content: space-between; }
+        .chat-messages { height: 250px; overflow-y: auto; padding: 1.2rem; background: #f9fff9; }
+        .chat-input { display: flex; padding: 1rem; border-top: 1px solid var(--gd-border); }
+        .chat-input input { flex: 1; border: 2px solid #e0f0e0; border-radius: 40px; padding: 0.8rem 1.2rem; margin-right: 0.8rem; }
+        .hidden { display: none; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-card { background: white; border-radius: 40px; max-width: 500px; width: 90%; padding: 2.5rem; box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+    (function() {
+        // ---------- COMPLETE STATE MANAGEMENT ----------
+        const STORAGE_KEY = 'greendot_complete';
+        let state = {
+            currentUser: null,
+            users: [],
+            currentPage: 'dashboard',
+            showChat: false,
+            chatMessages: [{ sender: 'bot', text: '👋 Welcome to Green-Dot! How can I help you today?' }],
+            fraudAlert: null,
+            showReloadModal: false,
+            showTransferModal: false,
+            showCheckModal: false,
+            notifications: []
+        };
+
+        // Load from localStorage
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state.users = parsed.users || [];
+                if (parsed.currentUser) {
+                    const found = state.users.find(u => u.email === parsed.currentUser.email);
+                    if (found) state.currentUser = found;
+                }
+                state.notifications = parsed.notifications || [];
+            }
+        } catch (e) { console.log('Fresh start'); }
+
+        // Create default user if none
+        if (state.users.length === 0) {
+            const defaultUser = createFullUser({
+                firstName: 'Alex', lastName: 'Rivera', email: 'alex.green@gmail.com',
+                cardNumber: '4532123456789012', cardCVV: '456', cardDate: '05/28'
+            });
+            state.users.push(defaultUser);
+            state.currentUser = defaultUser;
+        }
+
+        function createFullUser({ firstName, lastName, email, cardNumber, cardCVV, cardDate }) {
+            const id = 'u_' + Date.now() + Math.random().toString(36);
+            const accountNum = '48' + Math.floor(10000000 + Math.random()*90000000);
+            const routing = '124001545';
+            const transactions = [
+                { id: 't1', date: '2025-03-01', desc: 'DIRECT DEPOSIT - PAYROLL', amount: 2850.00, type: 'credit', category: 'income' },
+                { id: 't2', date: '2025-03-02', desc: 'WHOLE FOODS MARKET', amount: -156.32, type: 'debit', category: 'groceries' },
+                { id: 't3', date: '2025-03-03', desc: 'UBER TRIP', amount: -32.50, type: 'debit', category: 'transport' },
+                { id: 't4', date: '2025-03-05', desc: 'NETFLIX', amount: -15.99, type: 'debit', category: 'subscription' },
+                { id: 't5', date: '2025-03-07', desc: 'CASH RELOAD - CVS', amount: 200.00, type: 'credit', category: 'deposit' },
+                { id: 't6', date: '2025-03-10', desc: 'ATM WITHDRAWAL', amount: -80.00, type: 'debit', category: 'cash' },
+                { id: 't7', date: '2025-03-12', desc: 'SPOTIFY', amount: -10.99, type: 'debit', category: 'subscription' },
+                { id: 't8', date: '2025-03-15', desc: 'STARBUCKS', amount: -5.75, type: 'debit', category: 'food' },
+                { id: 't9', date: '2025-03-18', desc: 'AMAZON', amount: -67.43, type: 'debit', category: 'shopping' },
+                { id: 't10', date: '2025-03-20', desc: 'MOBILE CHECK DEPOSIT', amount: 150.00, type: 'credit', category: 'deposit' },
+            ];
+            const balance = transactions.reduce((acc, t) => acc + t.amount, 0);
+            return {
+                id, email, firstName, lastName,
+                name: firstName + ' ' + lastName,
+                kycStatus: 'verified',
+                accountNumber: accountNum,
+                routingNumber: routing,
+                balance: balance,
+                transactions: transactions,
+                card: { number: cardNumber, cvv: cardCVV, expiry: cardDate, locked: false, frozen: false },
+                riskScore: 18,
+                creditScore: 742,
+                directDeposit: { employer: 'Acme Corp', amount: 2850, nextDate: '2025-04-01' },
+                notifications: []
+            };
+        }
+
+        // ---------- RENDER ----------
+        function renderApp() {
+            if (!state.currentUser) {
+                renderLogin();
+                return;
+            }
+            const user = state.currentUser;
+            const html = `
+                <div class="navbar">
+                    <div class="logo"><i class="fas fa-leaf"></i> Green‑Dot</div>
+                    <div class="nav-links">
+                        <a class="${state.currentPage==='dashboard'?'active':''}" data-page="dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                        <a class="${state.currentPage==='cards'?'active':''}" data-page="cards"><i class="fas fa-credit-card"></i> Card</a>
+                        <a class="${state.currentPage==='transfer'?'active':''}" data-page="transfer"><i class="fas fa-exchange-alt"></i> Move Money</a>
+                        <a class="${state.currentPage==='insights'?'active':''}" data-page="insights"><i class="fas fa-chart-line"></i> Insights</a>
+                        <a class="${state.currentPage==='statement'?'active':''}" data-page="statement"><i class="fas fa-file-invoice"></i> Statements</a>
+                    </div>
+                    <div class="user-badge" id="logoutBtn">
+                        <i class="fas fa-user-circle"></i> ${user.firstName} <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="main-container">
+                    <div class="sidebar">
+                        <div class="sidebar-item ${state.currentPage==='dashboard'?'active':''}" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</div>
+                        <div class="sidebar-item ${state.currentPage==='cards'?'active':''}" data-page="cards"><i class="fas fa-credit-card"></i> Card Management</div>
+                        <div class="sidebar-item ${state.currentPage==='deposit'?'active':''}" data-page="deposit"><i class="fas fa-money-bill-wave"></i> Deposit Cash</div>
+                        <div class="sidebar-item ${state.currentPage==='transfer'?'active':''}" data-page="transfer"><i class="fas fa-paper-plane"></i> Send Money</div>
+                        <div class="sidebar-item ${state.currentPage==='check'?'active':''}" data-page="check"><i class="fas fa-camera"></i> Check Deposit</div>
+                        <div class="sidebar-item ${state.currentPage==='directdeposit'?'active':''}" data-page="directdeposit"><i class="fas fa-building"></i> Direct Deposit</div>
+                        <div class="sidebar-item ${state.currentPage==='insights'?'active':''}" data-page="insights"><i class="fas fa-lightbulb"></i> AI Insights</div>
+                        <div class="sidebar-item ${state.currentPage==='statement'?'active':''}" data-page="statement"><i class="fas fa-file-pdf"></i> Statements</div>
+                        <div class="sidebar-item ${state.currentPage==='settings'?'active':''}" data-page="settings"><i class="fas fa-cog"></i> Settings</div>
+                    </div>
+                    <div class="content" id="mainContent"></div>
+                </div>
+
+                <!-- Chat Widget -->
+                <div id="chatWidget" class="${state.showChat ? '' : 'hidden'} chat-popup">
+                    <div class="chat-header">
+                        <span><i class="fas fa-robot"></i> Green‑Dot AI Assistant</span>
+                        <i class="fas fa-times" id="closeChat" style="cursor:pointer;"></i>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        ${state.chatMessages.map(m => `
+                            <div style="margin-bottom:12px; text-align:${m.sender==='bot'?'left':'right'};">
+                                <span style="background:${m.sender==='bot'?'#e8f5e8':'#0a5c2e'}; color:${m.sender==='bot'?'#000':'white'}; padding:8px 16px; border-radius:20px; display:inline-block; max-width:85%;">${m.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="chat-input">
+                        <input id="chatInput" placeholder="Ask about fraud, limits...">
+                        <button class="button button-small" id="sendChat">Send</button>
+                    </div>
+                </div>
+                <button id="openChatBtn" style="position:fixed; bottom:30px; right:30px; background:#0a5c2e; color:white; border:none; border-radius:60px; padding:1rem 1.8rem; cursor:pointer; z-index:1000; font-size:1.1rem; box-shadow:0 8px 24px rgba(0,60,0,0.4);" class="${state.showChat ? 'hidden' : ''}">
+                    <i class="fas fa-comment-dots"></i> Chat with AI
+                </button>
+
+                ${state.fraudAlert ? `
+                <div style="position:fixed; top:100px; right:20px; background:#b71c1c; color:white; padding:1rem 2rem; border-radius:50px; box-shadow:0 8px 16px rgba(0,0,0,0.2); z-index:1500;">
+                    <i class="fas fa-exclamation-triangle"></i> ${state.fraudAlert} <span style="margin-left:1rem; cursor:pointer;" id="dismissAlert">✕</span>
+                </div>` : ''}
+            `;
+            document.getElementById('app').innerHTML = html;
+            attachGlobalListeners();
+            renderPageContent();
+        }
+
+        function renderLogin() {
+            const html = `
+                <div class="navbar" style="background:#0a5c2e;">
+                    <div class="logo"><i class="fas fa-leaf"></i> Green‑Dot</div>
+                </div>
+                <div class="login-container">
+                    <div class="login-card">
+                        <div class="login-title">🔐 Welcome Back</div>
+                        <div class="login-sub">Enter your card details to access your account</div>
+                        <div class="input-field"><label>First Name</label><input id="fname" placeholder="John" value="Alex"></div>
+                        <div class="input-field"><label>Last Name</label><input id="lname" placeholder="Doe" value="Rivera"></div>
+                        <div class="input-field"><label>Gmail</label><input id="gmail" placeholder="example@gmail.com" value="alex.green@gmail.com"></div>
+                        <div class="input-field"><label>Card Number</label><input id="cardNum" placeholder="4532 1234 5678 9012" value="4532123456789012" maxlength="19"></div>
+                        <div class="input-field"><label>CVV</label><input id="cvv" placeholder="123" value="456" maxlength="3"></div>
+                        <div class="input-field"><label>Expiry (MM/YY)</label><input id="exp" placeholder="03/28" value="05/28" maxlength="5"></div>
+                        <button class="login-btn" id="loginBtn"><i class="fas fa-lock"></i> Sign In</button>
+                        <p style="text-align:center; margin-top:2rem; color:#2e7d32;"><i class="fas fa-shield-alt"></i> FDIC insured · Green Dot Bank</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('app').innerHTML = html;
+            document.getElementById('loginBtn').addEventListener('click', () => {
+                const fname = document.getElementById('fname')?.value.trim();
+                const lname = document.getElementById('lname')?.value.trim();
+                const gmail = document.getElementById('gmail')?.value.trim();
+                const cardNum = document.getElementById('cardNum')?.value.replace(/\s/g, '');
+                const cvv = document.getElementById('cvv')?.value.trim();
+                const exp = document.getElementById('exp')?.value.trim();
+                if (!fname || !lname || !gmail || !cardNum || !cvv || !exp) {
+                    alert('All fields required');
+                    return;
+                }
+                // Create new user on login
+                const newUser = createFullUser({
+                    firstName: fname, lastName: lname, email: gmail,
+                    cardNumber: cardNum, cardCVV: cvv, cardDate: exp
+                });
+                state.users.push(newUser);
+                state.currentUser = newUser;
+                saveState();
+                renderApp();
+            });
+        }
+
+        function attachGlobalListeners() {
+            document.querySelectorAll('.sidebar-item[data-page]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    state.currentPage = e.currentTarget.dataset.page;
+                    renderApp();
+                });
+            });
+            document.querySelectorAll('.nav-links a[data-page]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    state.currentPage = e.currentTarget.dataset.page;
+                    renderApp();
+                });
+            });
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                state.currentUser = null;
+                renderApp();
+            });
+            document.getElementById('openChatBtn')?.addEventListener('click', () => { state.showChat = true; renderApp(); });
+            document.getElementById('closeChat')?.addEventListener('click', () => { state.showChat = false; renderApp(); });
+            document.getElementById('sendChat')?.addEventListener('click', () => {
+                const inp = document.getElementById('chatInput');
+                if (!inp.value.trim()) return;
+                state.chatMessages.push({ sender: 'user', text: inp.value });
+                setTimeout(() => {
+                    let reply = "I'm checking your account... Everything looks secure.";
+                    if (inp.value.toLowerCase().includes('fraud')) reply = "🔍 No suspicious activity detected. Your card is safe.";
+                    else if (inp.value.toLowerCase().includes('balance')) reply = `Your available balance is $${state.currentUser?.balance.toFixed(2)}.`;
+                    else if (inp.value.toLowerCase().includes('limit')) reply = "Your daily spending limit is $3,000.";
+                    state.chatMessages.push({ sender: 'bot', text: reply });
+                    renderApp();
+                }, 600);
+                inp.value = '';
+            });
+            document.getElementById('dismissAlert')?.addEventListener('click', () => { state.fraudAlert = null; renderApp(); });
+        }
+
+        function renderPageContent() {
+            const container = document.getElementById('mainContent');
+            if (!container) return;
+            const user = state.currentUser;
+            switch(state.currentPage) {
+                case 'dashboard': renderDashboard(container, user); break;
+                case 'cards': renderCards(container, user); break;
+                case 'deposit': renderDeposit(container, user); break;
+                case 'transfer': renderTransfer(container, user); break;
+                case 'check': renderCheck(container, user); break;
+                case 'directdeposit': renderDirectDeposit(container, user); break;
+                case 'insights': renderInsights(container, user); break;
+                case 'statement': renderStatement(container, user); break;
+                case 'settings': renderSettings(container, user); break;
+                default: renderDashboard(container, user);
+            }
+        }
+
+        function renderDashboard(container, user) {
+            const recent = [...user.transactions].reverse().slice(0, 5);
+            container.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                    <h1 style="color:#0a5c2e;">Welcome back, ${user.firstName}!</h1>
+                    <span class="ai-badge"><i class="fas fa-shield-alt"></i> Risk score: ${user.riskScore}/100</span>
+                </div>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Total Balance</h3>
+                        <div class="balance-large">$${user.balance.toFixed(2)}</div>
+                        <p>Account ****${user.accountNumber.slice(-4)} · Routing ${user.routingNumber}</p>
+                        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                            <button class="button" id="quickDeposit"><i class="fas fa-plus"></i> Add Cash</button>
+                            <button class="button-outline button" id="quickTransfer"><i class="fas fa-paper-plane"></i> Send</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Your Card</h3>
+                        <div style="background:#e8f5e9; border-radius:16px; padding:1rem; margin:1rem 0;">
+                            <i class="fab fa-cc-visa" style="font-size:2rem;"></i>
+                            <p style="font-family:monospace; font-size:1.2rem;">**** **** **** ${user.card.number.slice(-4)}</p>
+                            <p>Exp: ${user.card.expiry}</p>
+                        </div>
+                        <button class="button-outline button" id="viewCard">View Card Details</button>
+                    </div>
+                    <div class="card">
+                        <h3>AI Snapshot</h3>
+                        <canvas id="miniChart" width="200" height="120"></canvas>
+                        <p style="margin-top:0.5rem;"><i class="fas fa-arrow-up green"></i> Groceries +12% this month</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Recent Transactions</h3>
+                    ${recent.map(t => `
+                        <div class="transaction-row">
+                            <div class="transaction-left">
+                                <div class="transaction-icon"><i class="fas ${t.amount>0?'fa-arrow-down':'fa-arrow-up'}"></i></div>
+                                <div><div>${t.desc}</div><div style="font-size:0.8rem; color:#666;">${t.date}</div></div>
+                            </div>
+                            <div class="${t.amount>0?'green':'red'}">${t.amount>0?'+':'-'}$${Math.abs(t.amount).toFixed(2)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('quickDeposit')?.addEventListener('click', ()=>{ state.currentPage='deposit'; renderApp(); });
+            document.getElementById('quickTransfer')?.addEventListener('click', ()=>{ state.currentPage='transfer'; renderApp(); });
+            document.getElementById('viewCard')?.addEventListener('click', ()=>{ state.currentPage='cards'; renderApp(); });
+            setTimeout(() => {
+                const ctx = document.getElementById('miniChart')?.getContext('2d');
+                if (ctx) new Chart(ctx, { type:'doughnut', data: { labels:['Food','Transport','Bills','Fun'], datasets:[{ data:[320,145,210,90], backgroundColor:['#0a5c2e','#4caf50','#81c784','#c8e6c9'] }] } });
+            }, 100);
+        }
+
+        function renderCards(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e; margin-bottom:2rem;">Card Management</h1>
+                <div class="card-scene" id="cardScene">
+                    <div class="card-flipper" id="cardFlipper">
+                        <div class="card-front">
+                            <div class="card-logo">Green‑Dot <i class="fab fa-cc-visa"></i></div>
+                            <div class="card-number">${user.card.number.replace(/(\d{4})/g,'$1 ')}</div>
+                            <div class="card-details">
+                                <span>${user.firstName} ${user.lastName}</span>
+                                <span>${user.card.expiry}</span>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-stripe"></div>
+                            <div style="margin-top:30px; display:flex; justify-content:flex-end;">
+                                <div class="card-cvv">CVV: ${user.card.cvv}</div>
+                            </div>
+                            <p style="font-size:0.8rem; margin-top:30px;">Authorized signature</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:center; margin:2rem;">
+                    <button class="button" id="flipCardBtn"><i class="fas fa-sync-alt"></i> Flip Card</button>
+                    <button class="button-outline button" id="lockCard">${user.card.locked ? 'Unlock Card' : 'Lock Card'}</button>
+                    <button class="button-outline button" id="reportLost">Report Lost/Stolen</button>
+                </div>
+                <div class="card">
+                    <h3>Card Controls</h3>
+                    <p><i class="fas fa-globe"></i> Online purchases: <strong>Enabled</strong></p>
+                    <p><i class="fas fa-store"></i> In-store swipes: <strong>${user.card.locked ? 'Blocked' : 'Enabled'}</strong></p>
+                    <p><i class="fas fa-atm"></i> ATM withdrawals: <strong>Enabled</strong></p>
+                    <button class="button" style="margin-top:1rem;" id="setLimits">Set Spending Limits</button>
+                </div>
+            `;
+            const flipper = document.getElementById('cardFlipper');
+            document.getElementById('flipCardBtn')?.addEventListener('click', () => flipper.classList.toggle('flipped'));
+            document.getElementById('lockCard')?.addEventListener('click', () => {
+                user.card.locked = !user.card.locked;
+                saveState(); renderApp();
+            });
+            document.getElementById('reportLost')?.addEventListener('click', () => {
+                state.fraudAlert = 'Card reported lost. Temporary freeze applied.';
+                user.card.locked = true;
+                saveState(); renderApp();
+            });
+        }
+
+        function renderDeposit(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Deposit Cash at Retailer</h1>
+                <div class="card" style="max-width:600px;">
+                    <p>Visit any of 95,000+ locations including Walmart, CVS, Walgreens [citation:1]</p>
+                    <div class="input-field"><label>Amount ($)</label><input id="depAmount" type="number" value="50" min="1"></div>
+                    <div class="input-field"><label>Retailer</label>
+                        <select id="retailer">
+                            <option>Walmart</option><option>CVS Pharmacy</option><option>Walgreens</option><option>7-Eleven</option>
+                        </select>
+                    </div>
+                    <p>Fee: $3.95 · Instant credit</p>
+                    <button class="button" id="doDeposit">Generate Barcode & Complete</button>
+                </div>
+            `;
+            document.getElementById('doDeposit')?.addEventListener('click', () => {
+                const amt = parseFloat(document.getElementById('depAmount')?.value || '50');
+                const net = amt - 3.95;
+                user.transactions.push({ id: 'dep'+Date.now(), date: new Date().toISOString().slice(0,10), desc: 'CASH RELOAD - RETAIL', amount: net, type:'credit' });
+                user.balance += net;
+                state.fraudAlert = `$${amt} cash reload successful. New balance: $${user.balance.toFixed(2)}`;
+                saveState(); renderApp();
+            });
+        }
+
+        function renderTransfer(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Send Money</h1>
+                <div class="card" style="max-width:600px;">
+                    <div class="input-field"><label>Recipient (email or phone)</label><input id="rec" placeholder="friend@gmail.com"></div>
+                    <div class="input-field"><label>Amount ($)</label><input id="amt" type="number" value="25"></div>
+                    <div class="input-field"><label>Memo (optional)</label><input id="memo" placeholder="Dinner"></div>
+                    <p>Available: $${user.balance.toFixed(2)}</p>
+                    <button class="button" id="doTransfer">Send Money</button>
+                </div>
+            `;
+            document.getElementById('doTransfer')?.addEventListener('click', () => {
+                const amt = parseFloat(document.getElementById('amt')?.value || '0');
+                if (amt > user.balance) { alert('Insufficient funds'); return; }
+                if (amt > 500) {
+                    state.fraudAlert = '⚠️ Large transfer flagged for review. Please verify identity.';
+                } else {
+                    user.transactions.push({ id: 'tr'+Date.now(), date: new Date().toISOString().slice(0,10), desc: 'P2P Transfer', amount: -amt, type:'debit' });
+                    user.balance -= amt;
+                }
+                saveState(); renderApp();
+            });
+        }
+
+        function renderCheck(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Mobile Check Deposit</h1>
+                <div class="card">
+                    <div class="input-field"><label>Check Amount</label><input id="chkAmt" value="150.00"></div>
+                    <div class="input-field"><label>Check Number</label><input id="chkNum" value="1024"></div>
+                    <div style="background:#f5f5f5; padding:2rem; text-align:center; border-radius:20px; margin:1rem 0;">
+                        <i class="fas fa-camera" style="font-size:3rem;"></i>
+                        <p>Tap to take photos of front and back</p>
+                    </div>
+                    <button class="button" id="doCheck">Submit Check</button>
+                </div>
+            `;
+            document.getElementById('doCheck')?.addEventListener('click', () => {
+                const amt = parseFloat(document.getElementById('chkAmt')?.value || '0');
+                if (amt > 2000) {
+                    state.fraudAlert = 'Large check flagged for additional hold.';
+                } else {
+                    user.transactions.push({ id: 'ch'+Date.now(), date: new Date().toISOString().slice(0,10), desc: 'MOBILE CHECK DEPOSIT', amount: amt, type:'credit' });
+                    user.balance += amt;
+                }
+                saveState(); renderApp();
+            });
+        }
+
+        function renderDirectDeposit(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Direct Deposit</h1>
+                <div class="card">
+                    <p>Provide these details to your employer:</p>
+                    <div style="background:#e8f5e9; padding:1.5rem; border-radius:20px;">
+                        <p><strong>Account Number:</strong> ${user.accountNumber}</p>
+                        <p><strong>Routing Number:</strong> ${user.routingNumber}</p>
+                        <p><strong>Bank:</strong> Green Dot Bank, Member FDIC</p>
+                    </div>
+                    <p class="mt-4">Next expected deposit: $2,850 on ${user.directDeposit.nextDate}</p>
+                    <button class="button" id="simulatePay">Simulate Paycheck</button>
+                </div>
+            `;
+            document.getElementById('simulatePay')?.addEventListener('click', () => {
+                user.transactions.push({ id: 'dd'+Date.now(), date: new Date().toISOString().slice(0,10), desc: 'DIRECT DEPOSIT - PAYROLL', amount: 2850, type:'credit' });
+                user.balance += 2850;
+                saveState(); renderApp();
+            });
+        }
+
+        function renderInsights(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">AI-Powered Insights</h1>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Spending Categories</h3>
+                        <canvas id="insightChart" width="300" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <h3>Predictive Alerts</h3>
+                        <ul style="list-style-type:none;">
+                            <li><i class="fas fa-bell green"></i> Netflix renews in 3 days ($15.99)</li>
+                            <li><i class="fas fa-chart-line green"></i> Dining out up 18% this month</li>
+                            <li><i class="fas fa-exclamation-triangle" style="color:#f57c00;"></i> Balance may drop below $100 by Apr 2</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Fraud Protection</h3>
+                    <p>Risk score: <strong>${user.riskScore}/100</strong> (low risk)</p>
+                    <p>Last scan: No suspicious activity</p>
+                    <p><i class="fas fa-shield-alt"></i> 2FA enabled · Device recognized</p>
+                </div>
+            `;
+            setTimeout(() => {
+                const ctx = document.getElementById('insightChart')?.getContext('2d');
+                if (ctx) new Chart(ctx, { type:'bar', data: { labels:['Food','Shop','Bills','Transport'], datasets:[{ label:'Monthly ($)', data:[580,340,420,190], backgroundColor:'#0a5c2e' }] } });
+            }, 100);
+        }
+
+        function renderStatement(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Statements</h1>
+                <div class="card">
+                    <p>Select month to generate statement:</p>
+                    <select id="stmtMonth">
+                        <option>March 2025</option><option>February 2025</option><option>January 2025</option>
+                    </select>
+                    <button class="button mt-4" id="genStatement">Download PDF Statement</button>
+                </div>
+            `;
+            document.getElementById('genStatement')?.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(20); doc.setTextColor(10,92,46); doc.text('Green Dot Bank', 20,20);
+                doc.setFontSize(11); doc.setTextColor(0,0,0);
+                doc.text(`Statement for: ${user.name}`,20,35);
+                doc.text(`Account: ****${user.accountNumber.slice(-4)}`,20,45);
+                doc.text(`Period: March 1-31, 2025`,20,55);
+                let y = 70;
+                user.transactions.slice(0,12).forEach(t => {
+                    doc.text(`${t.date} ${t.desc.slice(0,20)}... $${t.amount.toFixed(2)}`,20,y);
+                    y+=7;
+                });
+                doc.text(`Closing balance: $${user.balance.toFixed(2)}`,20,y+10);
+                doc.save('GreenDot_Statement.pdf');
+            });
+        }
+
+        function renderSettings(container, user) {
+            container.innerHTML = `
+                <h1 style="color:#0a5c2e;">Settings</h1>
+                <div class="card">
+                    <h3>Profile</h3>
+                    <p>Name: ${user.name}</p>
+                    <p>Email: ${user.email}</p>
+                    <p>Member since: ${new Date(user.createdAt).toLocaleDateString()}</p>
+                    <button class="button-outline">Update Profile</button>
+                </div>
+                <div class="card">
+                    <h3>Security</h3>
+                    <p><i class="fas fa-check-circle green"></i> Two-factor authentication: Enabled</p>
+                    <p><i class="fas fa-check-circle green"></i> Device recognition: Active</p>
+                    <button class="button-outline">Change Password</button>
+                </div>
+                <div class="card">
+                    <h3>Notifications</h3>
+                    <p>Transaction alerts: SMS & Push</p>
+                    <p>Fraud alerts: Enabled</p>
+                </div>
+            `;
+        }
+
+        function saveState() {
+            const toStore = { users: state.users, currentUser: state.currentUser ? { email: state.currentUser.email } : null, notifications: state.notifications };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+        }
+
+        renderApp();
+    })();
+</script>
+</body>
+</html>
